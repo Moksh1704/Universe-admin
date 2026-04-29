@@ -3,7 +3,7 @@ import { Modal } from '../components/Modal'
 import { Empty } from '../components/Empty'
 import { fmtTime } from '../utils'
 import { EVENT_CATEGORIES, CAT_BADGE } from '../constants'
-import { fetchEventsApi, createEventApi } from '../services/api'
+import { fetchEventsApi, createEventApi, deleteEventApi, updateEventApi } from '../services/api'
 
 export function Events({ toast, confirm, addNotif }) {
   const [events,        setEvents]        = useState([]);
@@ -62,6 +62,7 @@ export function Events({ toast, confirm, addNotif }) {
         location:    newEvent.location,
         category:    newEvent.category,
         time:        newEvent.time || "00:00",
+        form_url:    newEvent.formUrl,
       });
       if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || "Failed"); }
       toast("Event created successfully");
@@ -77,16 +78,44 @@ export function Events({ toast, confirm, addNotif }) {
     }
   };
 
-  const saveLocal = () => {
+  // ✅ Fixed: saves edit to backend, then refetches
+  const saveEdit = async () => {
     if (!newEvent.title || !newEvent.date) { toast("Title and date are required","error"); return; }
-    setEvents(p => p.map(e => e.id === editing ? {...e, ...newEvent, desc:newEvent.description, venue:newEvent.location} : e));
-    toast("Event updated");
-    setModal(false);
+    if (!newEvent.category)                { toast("Please select a category","error"); return; }
+    setCreating(true);
+    try {
+      const res = await updateEventApi(editing, {
+        title:       newEvent.title,
+        description: newEvent.description,
+        date:        newEvent.date,
+        location:    newEvent.location,
+        category:    newEvent.category,
+        time:        newEvent.time || "00:00",
+        form_url:    newEvent.formUrl,
+      });
+      if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || "Failed"); }
+      toast("Event updated successfully");
+      setModal(false);
+      fetchEvents();
+    } catch(err) {
+      console.error("Edit error:", err);
+      toast(err.message || "Failed to update event","error");
+    } finally {
+      setCreating(false);
+    }
   };
 
-  const del = id => confirm("Delete this event? This cannot be undone.", () => {
-    setEvents(p => p.filter(e => e.id !== id));
-    toast("Event deleted","info");
+  // ✅ Fixed: deletes from backend, then refetches
+  const del = id => confirm("Delete this event? This cannot be undone.", async () => {
+    try {
+      const res = await deleteEventApi(id);
+      if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || "Failed"); }
+      toast("Event deleted","info");
+      fetchEvents();
+    } catch(err) {
+      console.error("Delete error:", err);
+      toast(err.message || "Failed to delete event","error");
+    }
   });
 
   return (
@@ -159,7 +188,7 @@ export function Events({ toast, confirm, addNotif }) {
           footer={
             <>
               <button className="btn btn-outline" onClick={() => setModal(false)}>Cancel</button>
-              <button className="btn btn-navy" onClick={editing ? saveLocal : handleCreateEvent} disabled={creating}>
+              <button className="btn btn-navy" onClick={editing ? saveEdit : handleCreateEvent} disabled={creating}>
                 {creating
                   ? <><i className="fas fa-spinner fa-spin"></i> Saving…</>
                   : <><i className="fas fa-save"></i> {editing ? "Save Changes" : "Create Event"}</>
