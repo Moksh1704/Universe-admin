@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Modal } from '../components/Modal'
 import { Empty } from '../components/Empty'
+import { LinkifiedText } from '../components/LinkifiedText'
 import { fmtDate } from '../utils'
 import {
   fetchAnnouncementsApi,
@@ -97,7 +98,9 @@ export function Announcements({ toast, confirm, addNotif }) {
                       <button className="btn btn-red btn-sm"     onClick={() => handleDelete(a?.id)}><i className="fas fa-trash"></i></button>
                     </div>
                   </div>
-                  <p style={{fontSize:13.5,color:"var(--text-2)",lineHeight:1.65}}>{a?.content || ""}</p>
+                  <p style={{fontSize:13.5,color:"var(--text-2)",lineHeight:1.65,whiteSpace:"pre-wrap"}}>
+                    <LinkifiedText text={a?.content || ""} />
+                  </p>
                   <div style={{fontSize:11.5,color:"var(--text-3)",marginTop:10,display:"flex",alignItems:"center",gap:5}}>
                     <i className="fas fa-calendar-alt" style={{color:"var(--gold)"}}></i>
                     {a?.created_at

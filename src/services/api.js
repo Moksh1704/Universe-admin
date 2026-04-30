@@ -47,15 +47,39 @@ export const deleteTimetableEntryApi = (id) =>
   fetch(`${BASE}/timetable/${id}`, {method:"DELETE"});
 
 /* ── Events ── */
+
+/** Fetch all events (admin panel — no auth required). */
 export const fetchEventsApi = () =>
   fetch(`${BASE}/events/admin/list-dev`).then(r => r.json());
 
+/** Create a new event (admin panel — no auth required). */
 export const createEventApi = (payload) =>
   fetch(`${BASE}/events/admin/create`, {
     method: "POST",
     headers: {"Content-Type":"application/json"},
     body: JSON.stringify(payload),
   });
+
+/**
+ * Partial update of an existing event (admin panel — no auth required).
+ * Sends only the fields that changed; backend applies them selectively.
+ * @param {string} id   - Event UUID
+ * @param {object} payload - Fields to update (title, date, time, location, category, description, formUrl, etc.)
+ */
+export const updateEventApi = (id, payload) =>
+  fetch(`${BASE}/events/admin/${id}`, {
+    method: "PUT",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify(payload),
+  });
+
+/**
+ * Delete an event (admin panel — no auth required).
+ * Uses the admin dev route so no Bearer token is needed.
+ * @param {string} id - Event UUID
+ */
+export const deleteEventApi = (id) =>
+  fetch(`${BASE}/events/admin/${id}`, {method:"DELETE"});
 
 /* ── Announcements ── */
 export const fetchAnnouncementsApi = () =>

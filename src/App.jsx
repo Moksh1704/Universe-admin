@@ -23,6 +23,7 @@ import { genId }       from './utils'
 import {
   fetchStudentsApi,
   fetchFacultyListApi,
+  fetchEventsApi,
   fetchChatApi,
 } from './services/api'
 
@@ -87,8 +88,32 @@ export default function App() {
     fetchStudents("faculty");
   }, [fetchStudents]);
 
-  /* ── Events (kept in App so Dashboard can read count) ── */
-  const [events, setEvents] = useState([]);
+  /* ── Events (lifted here so Dashboard + Events page share one source of truth) ── */
+  const [events,        setEvents]        = useState([]);
+  const [eventsLoading, setEventsLoading] = useState(true);
+
+  /** Normalize backend shape → consistent camelCase for the whole app. */
+  const normalizeEvent = e => ({
+    ...e,
+    location: e.venue || e.location || "",   // backend returns "venue"
+    formUrl:  e.form_url || e.formUrl || "", // backend returns snake_case
+  });
+
+  const fetchEvents = useCallback(async () => {
+    try {
+      setEventsLoading(true);
+      const raw = await fetchEventsApi();
+      console.log("EVENTS DATA:", raw);
+      setEvents(Array.isArray(raw) ? raw.map(normalizeEvent) : []);
+    } catch(err) {
+      console.error("Events fetch error:", err);
+      setEvents([]);
+    } finally {
+      setEventsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchEvents(); }, [fetchEvents]);
 
   /* ── Chat ── */
   const [chat,        setChat]        = useState([]);
@@ -139,7 +164,7 @@ export default function App() {
       case "timetable":
         return <Timetable faculty={faculty} facultyList={facultyList} facultyListLoading={facultyListLoading} {...shared}/>;
       case "events":
-        return <Events {...shared}/>;
+        return <Events events={events} setEvents={setEvents} eventsLoading={eventsLoading} fetchEvents={fetchEvents} normalizeEvent={normalizeEvent} {...shared}/>;
       case "announcements":
         return <Announcements {...shared}/>;
       case "chat":

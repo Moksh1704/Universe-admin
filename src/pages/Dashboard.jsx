@@ -38,7 +38,7 @@ export function Dashboard({ students, faculty, facultyList, events, setPage }) {
       id: "ev-" + (e.id || e._id || Math.random()),
       type: "event",
       title: e.title || "Event",
-      meta: e.location || e.venue || "",
+      meta: e.location || e.venue || "",   // 🔥 FIX: safe fallback for location/venue
       created_at: e.created_at || e.createdAt || e.date || 0,
     }));
     return [...annItems, ...evItems]
